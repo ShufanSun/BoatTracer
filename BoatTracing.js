@@ -181,7 +181,42 @@ class Barrier2 {
     }
 }
 
+class FlowFieldEffect {
+    constructor(context, width, height) {
+        this.context =context;
+        this.width = canvas.width;
+        this.height = canvas.height;
+        this.context.strokeStyle = "black";
+        this.angle=0;
+        this.lastTime=0;
+        this.interval=1000/600;
+        this.timer=0;
+        this.cellSize=10;
+        this.gradient;
+        this.createGradient();
+        this.context.strokeStyle=this.gradient;
+        this.radius=0;
+        this.vr=0.01;
+    }
 
+    createGradient(){
+        this.gradient=this.context.createLinearGradient(0,0,this.width,this.height);
+        this.gradient.addColorStop("0.1","#ff5c33");
+        this.gradient.addColorStop("0.2","#ff66b3");
+        this.gradient.addColorStop("0.4","#ccccff");
+        this.gradient.addColorStop("0.6","#b3ffff");
+        this.gradient.addColorStop("0.8","#80ff80");
+        this.gradient.addColorStop("0.9","#ffff33");
+    }
+    // Draw method to draw the effect on the canvas
+    draw(x, y,angle) {
+        const length=30;
+        this.context.beginPath();
+        this.context.moveTo(x, y);
+        this.context.lineTo(x+Math.cos(angle)*length, y+Math.sin(angle)*length);
+        this.context.stroke();
+    }
+}
 // RayCaster class manages the boat and obstacle interactions
 class RayCaster {
     constructor() {
@@ -189,13 +224,22 @@ class RayCaster {
         // Initialize the boat
         this.initializeBoat(this.obstacles);
         this.rays = [];
+        this.context=context;
         this.rayRange = 500;
         this.globalAngle = Math.PI;
         this.gapAngle = Math.PI /rayAngle;
         // this.gapAngle = degreesToRadians(rayAngle);
         this.currentAngle = 0;
         this.initializeFlowField(context,canvas.width,canvas.height);
-        
+        this.createGradient();
+        this.gradient;
+    }
+    createGradient(){
+        this.gradient=context.createLinearGradient(0,0,canvas.width,canvas.height);
+        this.gradient.addColorStop("0.1","#fcf57e");
+        this.gradient.addColorStop("0.2","#ff66b3");
+        this.gradient.addColorStop("0.4","#ccccff");
+        this.gradient.addColorStop("0.9","#ffff33");
     }
      // Method to update gapAngle
      updateGapAngle(angle) {
@@ -367,11 +411,16 @@ class RayCaster {
     draw() {
         this.beam();
         this.flowField.timer++;
+        
         if(this.flowField.timer>this.flowField.interval){
+            this.flowField.radius+=this.flowField.vr;
+            if(this.flowField.radius>5||this.flowField.radius<-5) this.flowField.vr*=-1;
             for(let y=0;y<canvas.height;y+=this.flowField.cellSize){
                 for(let x=0;x<canvas.width;x+=this.flowField.cellSize){
+                    const angle=(Math.cos(x*0.01)+Math.sin(y*0.04))*this.flowField.radius;
+                    this.flowField.context.clearRect(0,0,this.width,this.height);
                     this.flowField.draw(
-                        x,y
+                        x,y,angle
                     );
                 }
             }
@@ -400,6 +449,11 @@ class RayCaster {
             // Set the stroke color with adjusted alpha
             context.fillStyle = `rgba(255, 255, 255, ${alpha})`;
     
+
+
+
+
+            
             // Draw the ray
             context.lineTo(this.rays[i].x, this.rays[i].y);
             
@@ -407,7 +461,7 @@ class RayCaster {
     
         // Apply the stroke color to the rays
         context.stroke();
-        context.fillStyle = "#FEE267";
+        context.fillStyle = this.gradient;
         context.fill();
 
         context.moveTo(this.boat.x, this.boat.y);
@@ -462,30 +516,6 @@ class RayCaster {
     }
 }
 
-
-class FlowFieldEffect {
-    constructor(context, width, height) {
-        this.context =context;
-        this.width = canvas.width;
-        this.height = canvas.height;
-        this.context.strokeStyle = "black";
-        this.angle=0;
-        this.lastTime=0;
-        this.interval=1000/600;
-        this.timer=0;
-        this.cellSize=15;
-
-    }
-
-    // Draw method to draw the effect on the canvas
-    draw(x, y) {
-        const length=300;
-        this.context.beginPath();
-        this.context.moveTo(x, y);
-        this.context.lineTo(x+5, y+5);
-        this.context.stroke();
-    }
-}
 
 // Create an instance of the RayCaster
 let rayCaster = new RayCaster();
