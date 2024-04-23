@@ -2,6 +2,9 @@
  * Author: Shufan Sun
  * Wave background Math reference:
  * https://www.youtube.com/watch?v=uCH1ta5OUHw
+ * Ray Tracing algorithm reference:
+ * https://www.youtube.com/watch?v=xo8rcNpKRaU
+ * 
  */
 let canvas = document.getElementById('canvas');
 let context = canvas.getContext("2d");
