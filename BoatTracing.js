@@ -1,5 +1,7 @@
 /**
  * Author: Shufan Sun
+ * Wave background Math reference:
+ * https://www.youtube.com/watch?v=uCH1ta5OUHw
  */
 let canvas = document.getElementById('canvas');
 let context = canvas.getContext("2d");
@@ -8,7 +10,7 @@ let slider=document.getElementById("angleSlider");
 let keysPressed = {};
 let rayAngle=4.8;
 // Canvas background color
-canvas.style.background = '#00ABCD';
+canvas.style.background = '#000000';
 
 // Event listener for keydown events to update keysPressed object
 document.addEventListener("keydown", (event) => {
@@ -181,6 +183,8 @@ class Barrier2 {
     }
 }
 
+
+//class for the wave simulation
 class FlowFieldEffect {
     constructor(context, width, height) {
         this.context =context;
@@ -191,7 +195,7 @@ class FlowFieldEffect {
         this.lastTime=0;
         this.interval=1000/600;
         this.timer=0;
-        this.cellSize=10;
+        this.cellSize=9;
         this.gradient;
         this.createGradient();
         this.context.strokeStyle=this.gradient;
@@ -200,20 +204,34 @@ class FlowFieldEffect {
     }
 
     createGradient(){
+        //add color for the waves
         this.gradient=this.context.createLinearGradient(0,0,this.width,this.height);
-        this.gradient.addColorStop("0.1","#ff5c33");
-        this.gradient.addColorStop("0.2","#ff66b3");
-        this.gradient.addColorStop("0.4","#ccccff");
+        this.gradient.addColorStop("0.1","#538263");
+        this.gradient.addColorStop("0.2","#3bf77a");
+        this.gradient.addColorStop("0.4","#45f7da");
         this.gradient.addColorStop("0.6","#b3ffff");
         this.gradient.addColorStop("0.8","#80ff80");
         this.gradient.addColorStop("0.9","#ffff33");
     }
     // Draw method to draw the effect on the canvas
-    draw(x, y,angle) {
-        const length=30;
+    draw(x, y,angle,boatX,boatY) {
+        let positionX=x;
+        let positionY=y;
+        let dx=boatX-positionX;
+        let dy=boatY-positionY;
+        //calculate distance to the boat
+        //the closer the shorter
+        let distance=(dx*dx+dy*dy);
+        const length=distance/6000;
         this.context.beginPath();
+        //calculate the wave created by boat movement
+        let length2=4000/(dx*dx+dy*dy);
+        if(length2>30){
+            length2=30;
+        }
         this.context.moveTo(x, y);
-        this.context.lineTo(x+Math.cos(angle)*length, y+Math.sin(angle)*length);
+        //draw segments that form the waves
+        this.context.lineTo(x+Math.cos(angle)*length+Math.cos(angle)*length2, y+Math.sin(angle)*length+Math.sin(angle)*length2);
         this.context.stroke();
     }
 }
@@ -234,12 +252,12 @@ class RayCaster {
         this.createGradient();
         this.gradient;
     }
+    //color the lights
     createGradient(){
         this.gradient=context.createLinearGradient(0,0,canvas.width,canvas.height);
-        this.gradient.addColorStop("0.1","#fcf57e");
-        this.gradient.addColorStop("0.2","#ff66b3");
-        this.gradient.addColorStop("0.4","#ccccff");
-        this.gradient.addColorStop("0.9","#ffff33");
+        this.gradient.addColorStop("0.4","#fcf57e77");
+        this.gradient.addColorStop("0.1","#9090f5");
+        this.gradient.addColorStop("0.9","#ffffff");
     }
      // Method to update gapAngle
      updateGapAngle(angle) {
@@ -409,25 +427,28 @@ class RayCaster {
 
     // Draw the boat and rays
     draw() {
+        //draw the beam shoot from boat
         this.beam();
+        //move the wave
         this.flowField.timer++;
         
         if(this.flowField.timer>this.flowField.interval){
+            //change the length and direction of the waves
             this.flowField.radius+=this.flowField.vr;
-            if(this.flowField.radius>5||this.flowField.radius<-5) this.flowField.vr*=-1;
+            if(this.flowField.radius>3||this.flowField.radius<-3) this.flowField.vr*=-1;
             for(let y=0;y<canvas.height;y+=this.flowField.cellSize){
                 for(let x=0;x<canvas.width;x+=this.flowField.cellSize){
+                    //adjust this line to change the look of the waves
                     const angle=(Math.cos(x*0.01)+Math.sin(y*0.04))*this.flowField.radius;
                     this.flowField.context.clearRect(0,0,this.width,this.height);
                     this.flowField.draw(
-                        x,y,angle
+                        x,y,angle,this.boat.x,this.boat.y,
                     );
                 }
             }
         }
         this.boat.draw();
         this.flowField.angle+=0.1;
-         // Increment the timer
    
         // this.flowField.draw(
         //     canvas.width/2+Math.cos(this.flowField.angle)*100,
@@ -449,11 +470,6 @@ class RayCaster {
             // Set the stroke color with adjusted alpha
             context.fillStyle = `rgba(255, 255, 255, ${alpha})`;
     
-
-
-
-
-            
             // Draw the ray
             context.lineTo(this.rays[i].x, this.rays[i].y);
             
