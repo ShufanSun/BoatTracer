@@ -1,3 +1,6 @@
+/**
+ * Author: Shufan Sun
+ */
 let canvas = document.getElementById('canvas');
 let context = canvas.getContext("2d");
 let slider=document.getElementById("angleSlider");
@@ -5,7 +8,7 @@ let slider=document.getElementById("angleSlider");
 let keysPressed = {};
 let rayAngle=4.8;
 // Canvas background color
-canvas.style.background = '#000434';
+canvas.style.background = '#00ABCD';
 
 // Event listener for keydown events to update keysPressed object
 document.addEventListener("keydown", (event) => {
@@ -191,6 +194,7 @@ class RayCaster {
         this.gapAngle = Math.PI /rayAngle;
         // this.gapAngle = degreesToRadians(rayAngle);
         this.currentAngle = 0;
+        this.initializeFlowField(context,canvas.width,canvas.height);
         
     }
      // Method to update gapAngle
@@ -208,6 +212,10 @@ class RayCaster {
                 validPosition = true;
             }
         }
+    }
+    initializeFlowField(context,width,height) {
+        this.flowField = new FlowFieldEffect(context, canvas.width, canvas.height);
+        
     }
 
     checkCollisionWithObstacles(x, y, obstacles) {
@@ -358,7 +366,24 @@ class RayCaster {
     // Draw the boat and rays
     draw() {
         this.beam();
+        this.flowField.timer++;
+        if(this.flowField.timer>this.flowField.interval){
+            for(let y=0;y<canvas.height;y+=this.flowField.cellSize){
+                for(let x=0;x<canvas.width;x+=this.flowField.cellSize){
+                    this.flowField.draw(
+                        x,y
+                    );
+                }
+            }
+        }
         this.boat.draw();
+        this.flowField.angle+=0.1;
+         // Increment the timer
+   
+        // this.flowField.draw(
+        //     canvas.width/2+Math.cos(this.flowField.angle)*100,
+        //      canvas.height/2+Math.cos(this.flowField.angle)*100
+        // );
         context.beginPath();
         context.moveTo(this.boat.x, this.boat.y);
     
@@ -382,7 +407,7 @@ class RayCaster {
     
         // Apply the stroke color to the rays
         context.stroke();
-        context.fillStyle = "#EEEDDE";
+        context.fillStyle = "#FEE267";
         context.fill();
 
         context.moveTo(this.boat.x, this.boat.y);
@@ -434,6 +459,31 @@ class RayCaster {
         }
     
         this.moveBoat();
+    }
+}
+
+
+class FlowFieldEffect {
+    constructor(context, width, height) {
+        this.context =context;
+        this.width = canvas.width;
+        this.height = canvas.height;
+        this.context.strokeStyle = "black";
+        this.angle=0;
+        this.lastTime=0;
+        this.interval=1000/600;
+        this.timer=0;
+        this.cellSize=15;
+
+    }
+
+    // Draw method to draw the effect on the canvas
+    draw(x, y) {
+        const length=300;
+        this.context.beginPath();
+        this.context.moveTo(x, y);
+        this.context.lineTo(x+5, y+5);
+        this.context.stroke();
     }
 }
 
@@ -506,9 +556,20 @@ window.setInterval(function () {
     context.clearRect(0, 0, canvas.width, canvas.height);
     rayCaster.draw();
     rayCaster.control();
+    // Draw Barrier objects first
     for (let p = 0; p < rayCaster.obstacles.length; p++) {
-        rayCaster.obstacles[p].draw();
+        if (rayCaster.obstacles[p] instanceof Barrier) {
+            rayCaster.obstacles[p].draw();
+        }
     }
+
+    // Draw Barrier2 objects next
+    for (let p = 0; p < rayCaster.obstacles.length; p++) {
+        if (rayCaster.obstacles[p] instanceof Barrier2) {
+            rayCaster.obstacles[p].draw();
+        }
+    }
+
 }, 15);
 
 // Function to check if a point intersects with a circle
